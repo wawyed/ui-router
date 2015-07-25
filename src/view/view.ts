@@ -12,7 +12,7 @@ interface ViewKey {
 }
 
 const debug = noop;
-//const debug = function() { console.log.call(console, arguments); };
+//const debug = function(...any) { console.log.call(console, arguments); };
 
 const viewKey = (item: any) =>
   extend(pick(item, "name", "context", "parentContext"),  { item: item });

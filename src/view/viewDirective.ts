@@ -5,7 +5,7 @@ import {annotateController} from "../common/angular1";
 import {ViewConfig} from "./view"
 
 const debug = noop;
-//const debug = function() { console.log.apply(console, arguments); };
+//const debug = function(...any) { console.log.apply(console, arguments); };
 
 /**
  * @ngdoc directive
@@ -163,10 +163,10 @@ function $ViewDirective(   $view,   $animate,   $uiViewScroll,   $interpolate) {
             inherited     = $element.inheritedData('$uiView') || { context: $view.rootContext() },
             name          = $interpolate(attrs.uiView || attrs.name || '')(scope) || '$default';
 
-        function configUpdatedCallback(config) {
+        function configUpdatedCallback(config: ViewConfig) {
           if (configsEqual(viewConfig, config)) return;
           debug(`Updating uiView "${viewData.fqn}" (${viewData.name} in context=${viewData.context}/parent=${viewData.parentContext}) with new config template "${config.template}"`);
-          viewConfig = angular.copy(config);
+          viewConfig = extend({}, config);
           updateView(config);
         }
 
