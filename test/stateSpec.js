@@ -1659,3 +1659,62 @@ describe("state params", function() {
     }));
   });
 });
+
+fdescribe("Tergeted Views", function() {
+  var scope, $compile, $injector, $q, $state, elem, $controllerProvider;
+  var states = [
+    { name: 'A', template: "<ui-view id='A_default'></ui-view> <div id='named_A' ui-view='named'></div>" },
+    { name: 'A.a', template: "<ui-view id='Aa_default'></ui-view>" },
+    { name: 'A.a.i', views: {
+      "^.named": { template: "A.a.i" },
+      "$default": { template: "<ui-view id='Aai_default'>asdf</ui-view>"}
+    } },
+    { name: 'A.a.i.1', views: {
+      "^.named": { template: "A.a.i.1" },
+      "$default": { template: "c"}
+    } },
+
+    { name: 'A.b', template: "<ui-view id='Ab'></ui-view>" },
+    { name: 'A.b.i', views: {
+      "named@A": { template: "A.b.i" },
+      "": { template: "<ui-view id='Abi_default'></ui-view>"}
+    } },
+    { name: 'A.b.i.1', views: {
+      "named@A": { template: "A.b.i.1" },
+      "": { template: "<ui-view id='Abi1_default'></ui-view>"}
+    } }
+  ];
+
+  beforeEach(module('ui.router', function(_$provide_, _$controllerProvider_,_$stateProvider_) {
+    _$provide_.factory('foo', function() {
+      return "Foo";
+    });
+    $controllerProvider = _$controllerProvider_;
+    $stateProvider = _$stateProvider_;
+    states.forEach($stateProvider.state.bind($stateProvider));
+  }));
+
+  beforeEach(inject(function ($rootScope, _$compile_, _$injector_, _$q_, _$state_) {
+    scope = $rootScope.$new();
+    $compile = _$compile_;
+    $injector = _$injector_;
+    $q = _$q_;
+    $state = _$state_;
+    elem = angular.element('<div>');
+    elem.append($compile('<div><ui-view></ui-view></div>')(scope));
+  }));
+
+  describe("view targetting", function() {
+    it("should relatively target a view in an ancestor, when the "^" symbol is in the viewname", inject(function() {
+      $state.go("A.a.i"); $q.flush();
+      expect(elem[0].querySelector("#named_A").innerHTML).toBe("A.a.i");
+      expect(elem[0].querySelector("#Aai_default").innerHTML).toBe("asdf");
+    }));
+
+    it("should target a view in an ancestor, when the "^" symbol is in the viewname", inject(function() {
+      $state.go("A.a.i.1"); $q.flush();
+      expect(elem[0].querySelector("#named_A").innerHTML).toBe("A.a.i.1");
+      expect(elem[0].querySelector("#Aai_default").innerHTML).toBe("asdf");
+    }));
+  });
+});
