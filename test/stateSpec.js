@@ -1661,35 +1661,8 @@ describe("state params", function() {
 });
 
 fdescribe("Targeted Views", function() {
-  var scope, $compile, $injector, $q, $state, elem, $controllerProvider;
-  var states = [
-    { name: 'A', template: "<div ui-view id='A_default'></div> <div ui-view='named' id='named_A'></div>" },
-    { name: 'A.a', template: "<div ui-view id='Aa_default'></div>" },
-    { name: 'A.a.i', views: {
-      "^.named": { template: "A.a.i" },
-      "$default": { template: "<div ui-view id='Aai_default'>asdf</div>"}
-    } },
-    { name: 'A.a.i.1', views: {
-      "^.^.named": { template: "A.a.i.1" },
-      "$default": { template: "blarg"}
-    } },
-
-    { name: 'A.b', template: "<div ui-view id='Ab'></div>" },
-    { name: 'A.b.i', views: {
-      "named@A": { template: "A.b.i" },
-      "": { template: "<div ui-view id='Abi_default'></div>"}
-    } },
-    { name: 'A.b.i.1', views: {
-      "named@A": { template: "A.b.i.1" },
-      "": { template: "<div ui-view id='Abi1_default'></div>"}
-    } }
-  ];
-
+  var states, scope, $compile, $injector, $q, $state, elem, $controllerProvider;
   beforeEach(module('ui.router', function(_$provide_, _$controllerProvider_,_$stateProvider_) {
-    _$provide_.factory('foo', function() {
-      return "Foo";
-    });
-    $controllerProvider = _$controllerProvider_;
     $stateProvider = _$stateProvider_;
     states.forEach($stateProvider.state.bind($stateProvider));
   }));
@@ -1704,18 +1677,65 @@ fdescribe("Targeted Views", function() {
     elem.append($compile('<div><ui-view></ui-view></div>')(scope));
   }));
 
+  states = [
+    { name: 'A', template: "<div ui-view id='A_default'></div> <div ui-view='named' id='named_A'></div>" },
+    { name: 'A.a', template: "<div ui-view id='Aa_default'>mike</div>" },
+    { name: 'A.a.i', views: {
+      "^.named": { template: "A.a.i" },
+      "$default": { template: "<div ui-view id='Aai_default'>asdf</div>"}
+    } },
+    { name: 'A.a.i.1', views: {
+      "^.^.named": { template: "A.a.i.1" },
+      "": { template: "blarg"}
+    } },
+    { name: 'A.a.i.2', views: {
+      "!$default": { template: "rooted!" }
+    } },
+    { name: 'A.a.i.3', views: {
+      "!$default.$default.named": { template: "fhqwhgads" }
+    } },
+
+    { name: 'A.b', template: "<div ui-view id='Ab'></div>" },
+    { name: 'A.b.i', views: {
+      "named@A": { template: "A.b.i" },
+      "": { template: "<div ui-view id='Abi_default'></div>"}
+    } },
+    { name: 'A.b.i.1', views: {
+      "named@A": { template: "A.b.i.1" },
+      "": { template: "<div ui-view id='Abi1_default'></div>"}
+    } }
+  ];
+
+
   describe("view targetting", function() {
-    it("should relatively target a view in an ancestor, when the "^" symbol is in the viewname", inject(function() {
+    it("should target the unnamed view in the parent context, when the view's name is '$default'", inject(function() {
       $state.go("A.a.i"); $q.flush();
-      expect(elem[0].querySelector("#named_A").textContent).toBe("A.a.i");
       expect(elem[0].querySelector("#Aa_default").textContent).toBe("asdf");
     }));
 
+    it("should target the unnamed view in the parent context, when the view's name is ''", inject(function() {
+      $state.go("A.a.i.1"); $q.flush();
+      expect(elem[0].querySelector("#Aai_default").textContent).toBe("blarg");
+    }));
 
-    it("should target a view in an ancestor, when the "^" symbol is in the viewname", inject(function() {
+    it("should relatively target a view in the grandparent context, when the viewname starts with '^.'", inject(function() {
+      $state.go("A.a.i"); $q.flush();
+      expect(elem[0].querySelector("#named_A").textContent).toBe("A.a.i");
+    }));
+
+    it("should relatively target a view in the great-grandparent context, when the viewname starts with '^.^.'", inject(function() {
       $state.go("A.a.i.1"); $q.flush();
       expect(elem[0].querySelector("#named_A").textContent).toBe("A.a.i.1");
-      expect(elem[0].querySelector("#Aai_default").textContent).toBe("blarg");
+    }));
+
+    it("should target the root view, when the view's name is '!$default'", inject(function() {
+      $state.go("A.a.i.2"); $q.flush();
+      expect(elem[0].textContent).toBe("rooted!");
+    }));
+
+    it("should target a view absolutely using the ui-view's FQN when the view name is preceded by the '!' character", inject(function() {
+      $state.go("A.a.i.3"); $q.flush();
+      expect(elem[0].querySelector("#named_A").textContent).toBe("fhqwhgads");
     }));
   });
 });
